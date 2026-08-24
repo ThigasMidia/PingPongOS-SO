@@ -9,14 +9,30 @@
 #ifndef __PPOS_TCB__
 #define __PPOS_TCB__
 
+#include "ctx.h"
+
+extern struct task_t task_kernel;		// Variável global com a tarefa inicial (kernel)
+extern struct task_t* curr_task;		// Tarefa atual (contexto atual)
+
+// Enum que define os status de uma tarefa
+typedef enum {
+	READY,
+	RUNNING,
+	SUSPENDED
+} t_status;
+
+typedef struct ctx_t ctx_t;
+
 // Task Control Block (TCB), infos sobre uma tarefa
 struct task_t
 {
-    int id;         // identificador da tarefa
-    char *name;     // nome da tarefa
-    ctx_t context;  // contexto da tarefa
-    int status;     // pronta, executando, ...
-    ...             // demais informações, a completar
+    int id;					// identificador da tarefa
+    char *name;				// nome da tarefa
+    ctx_t context;			// contexto da tarefa
+    t_status status;		// pronta, executando, ...
+	char* stack;			// stack
+	
+	struct task_t* parent;	// tarefa pai
 };
 
 #endif
