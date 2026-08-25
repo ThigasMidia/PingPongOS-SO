@@ -9,12 +9,14 @@
 #include "dispatcher.h"
 #include "task.h"
 #include "lib/pplibc.h"
+#include "macros.h"
 #include <stdio.h>
 
 extern void user_main (void *arg);
 
 void dispatcher_init()
-{/*
+{
+	ppos_debug("subsystem dispatcher initiated\n");/*
 	struct task_t* task_user = task_create("user_main", user_main, NULL);
 	if (!task_user) return;
 
@@ -34,9 +36,11 @@ void dispatcher_term()
 //Dispatcher simples para execucao de tarefa user_main.
 void dispatcher()
 {
+	ppos_debug("dispatcher initiated\n");
 	struct task_t* task_user;
 	task_user = task_create("user_main", user_main, NULL);
 	task_switch(task_user);
+	ppos_debug("dispatcher stopping, no more user tasks\n");
 	task_destroy(task_user);
 }
 
@@ -52,6 +56,8 @@ int task_switch(struct task_t *task) {
 	if (!next_task) return ERROR;
 
 	curr_task = next_task;
+
+	ppos_debug("task %d (%s) switched to task %d (%s)\n", old_task->id, old_task->name, next_task->id, next_task->name);
 
 	old_task->status = READY;
 	next_task->status = RUNNING;

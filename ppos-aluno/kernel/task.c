@@ -12,6 +12,7 @@
 
 #include "task.h"
 #include "memory.h"
+#include "macros.h"
 #include "lib/pplibc.h"
 
 struct task_t task_kernel;		// Variável global com a tarefa inicial (kernel)
@@ -34,6 +35,7 @@ void task_init()
 	
 	curr_task = &task_kernel;	// Define que a tarefa atual é a tarefa do kernel
 	// contexto (?)
+	ppos_debug("subsystem task initiated\n");
 }
 
 
@@ -75,6 +77,8 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->context = ctx;
 	task->stack = stack;
 
+	ppos_debug("task %d (%s) created task %d (%s)\n", curr_task->id, curr_task->name, task->id, task->name);
+
 	return task;
 }
 
@@ -84,8 +88,10 @@ int task_destroy(struct task_t *task){
 	// Retorno: ERROR ou NOERROR
 	
 	if (!task) return ERROR;
+	ppos_debug("task %d (%s) destroy task %d (%s)\n",task->parent->id, task->parent->name, task->id, task->name);
 	if (task->stack) mem_free(task->stack);
 	mem_free(task);
+
 
 	return NOERROR;
 }
