@@ -22,7 +22,7 @@ void task_init()
 {
 	// Inicia uma tarefa do kernel "task_kernel", com nome “kernel” e ID 0.
 	
-	task_kernel.id = 0;						
+	task_kernel.id = 0;
 	task_kernel.name = "kernel";
 	task_kernel.status = RUNNING;
 	task_kernel.stack = NULL;

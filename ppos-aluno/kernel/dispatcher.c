@@ -7,11 +7,12 @@
 #include "dispatcher.h"
 #include "task.h"
 #include "lib/pplibc.h"
+#include <stdio.h>
 
 extern void user_main (void *arg);
 
 void dispatcher_init()
-{
+{/*
 	struct task_t* task_user = task_create("user_main", user_main, NULL);
 	if (!task_user) return;
 
@@ -21,15 +22,20 @@ void dispatcher_init()
 		return;
 	}
 
-	task_destroy(task_user);
+	task_destroy(task_user);*/
 }
 
 void dispatcher_term()
 {
 }
 
+//Dispatcher simples para execucao de tarefa user_main.
 void dispatcher()
 {
+	struct task_t* task_user;
+	task_user = task_create("user_main", user_main, NULL);
+	task_switch(task_user);
+	task_destroy(task_user);
 }
 
 int task_switch(struct task_t *task) {
