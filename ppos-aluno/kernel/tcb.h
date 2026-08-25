@@ -3,6 +3,8 @@
 // Versão 2.1 -- 06/2026
 
 // Este arquivo PODE/DEVE ser alterado.
+// Eduarda Saibert - GRR20232368
+// Kawai Barzotto - GRR20235687
 
 // Descritor de tarefas (TCB - Task Control Block).
 

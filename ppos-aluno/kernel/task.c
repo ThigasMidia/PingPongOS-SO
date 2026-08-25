@@ -1,6 +1,8 @@
 // PingPongOS - PingPong Operating System
 
 // Este arquivo PODE/DEVE ser alterado.
+// Eduarda Saibert - GRR20232368
+// Kawai Barzotto - GRR20235687
 
 // Gerência básica de tarefas.
 

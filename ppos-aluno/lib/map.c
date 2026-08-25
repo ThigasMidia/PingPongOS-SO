@@ -3,6 +3,8 @@
 // Versão 2.1 -- 07/2026
 
 // Este arquivo PODE/DEVE ser alterado.
+// Eduarda Saibert - GRR20232368
+// Kawai Barzotto - GRR20235687
 // Implementação do TAD Mapa de objetos
 
 #include <stdio.h>
