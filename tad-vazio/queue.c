@@ -3,6 +3,8 @@
 // Versão 2.1 -- 07/2026
 
 // Este arquivo PODE/DEVE ser alterado.
+// Eduarda Saibert - GRR20232368
+// Kawai Barzotto - GRR20235687
 
 // Implementação do TAD fila genérica
 #include <stdio.h>
@@ -129,13 +131,12 @@ bool queue_has(struct queue_t *queue, void *item) {
     
     struct queue_t_node *finder_iterator = queue->head;
     bool found = false;
-    if(queue->head->item == item)
-        found = true;
 
-    while(finder_iterator->next && !found) {
-        if(finder_iterator->next->item == item) {
+    while(finder_iterator && !found) {
+        if(finder_iterator->item == item) {
             found = true;
         }
+        finder_iterator = finder_iterator->next;
     }
     
     return found;

@@ -13,6 +13,7 @@
 
 #include "ctx.h"
 
+extern struct queue_t *queue_ready; 
 extern struct task_t task_kernel;		// Variável global com a tarefa inicial (kernel)
 extern struct task_t* curr_task;		// Tarefa atual (contexto atual)
 
@@ -20,7 +21,8 @@ extern struct task_t* curr_task;		// Tarefa atual (contexto atual)
 typedef enum {
 	READY,
 	RUNNING,
-	SUSPENDED
+	SUSPENDED,
+	FINISHED
 } t_status;
 
 typedef struct ctx_t ctx_t;
