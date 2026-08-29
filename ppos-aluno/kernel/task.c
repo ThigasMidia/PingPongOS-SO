@@ -14,9 +14,13 @@
 #include "memory.h"
 #include "macros.h"
 #include "lib/pplibc.h"
+#include "lib/queue.h"
 
 struct task_t task_kernel;		// Variável global com a tarefa inicial (kernel)
 struct task_t* curr_task;		// Tarefa atual (contexto atual)
+
+extern struct queue_t* queue_ready;
+extern int task_switch(struct task_t* task);
 
 int next_t_id = 0;						// Próximo ID a ser definido a uma tarefa
 
@@ -78,7 +82,7 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->stack = stack;
 
 	ppos_debug("task %d (%s) created task %d (%s)\n", curr_task->id, curr_task->name, task->id, task->name);
-
+	queue_add(queue_ready, task);
 	return task;
 }
 
@@ -88,7 +92,7 @@ int task_destroy(struct task_t *task){
 	// Retorno: ERROR ou NOERROR
 	
 	if (!task) return ERROR;
-	ppos_debug("task %d (%s) destroy task %d (%s)\n",task->parent->id, task->parent->name, task->id, task->name);
+	ppos_debug("task %d (%s) destroy task %d (%s)\n",curr_task->id, curr_task->name, task->id, task->name);
 	if (task->stack) mem_free(task->stack);
 	mem_free(task);
 
@@ -113,3 +117,32 @@ char *task_name(struct task_t *task){
 }
 
 
+void task_yield()
+{	
+	if(!curr_task) return;
+
+	curr_task->status = READY;
+	queue_add(queue_ready, curr_task);
+	task_switch(&task_kernel);
+}
+
+
+int task_wait(struct task_t *task)
+{
+}
+
+
+void task_sleep(int t)
+{
+}
+
+
+void task_exit(int exit_code)
+{
+	curr_task->status = FINISHED;
+	if(queue_has(queue_ready, curr_task)) queue_del(queue_ready, curr_task);
+
+	ppos_debug("task %d (%s) exited with code %d\n", curr_task->id, curr_task->name, exit_code);
+
+	task_switch(&task_kernel);
+}

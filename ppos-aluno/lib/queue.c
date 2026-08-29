@@ -131,13 +131,12 @@ bool queue_has(struct queue_t *queue, void *item) {
     
     struct queue_t_node *finder_iterator = queue->head;
     bool found = false;
-    if(queue->head->item == item)
-        found = true;
 
-    while(finder_iterator->next && !found) {
-        if(finder_iterator->next->item == item) {
+    while(finder_iterator && !found) {
+        if(finder_iterator->item == item) {
             found = true;
         }
+        finder_iterator = finder_iterator->next;
     }
     
     return found;
