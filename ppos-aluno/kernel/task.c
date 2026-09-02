@@ -59,6 +59,8 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->id = next_t_id;
 	task->status = READY;
 	task->parent = curr_task;
+	task->static_priority = 0;
+	task->dynamic_priority = 0;
 
 	next_t_id++;						// Incrementa o próximo ID
 	
@@ -126,7 +128,7 @@ void task_yield()
 	task_switch(&task_kernel);
 }
 
-
+/*
 int task_wait(struct task_t *task)
 {
 }
@@ -134,7 +136,7 @@ int task_wait(struct task_t *task)
 
 void task_sleep(int t)
 {
-}
+}*/
 
 
 void task_exit(int exit_code)

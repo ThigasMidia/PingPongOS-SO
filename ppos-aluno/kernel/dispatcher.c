@@ -8,6 +8,7 @@
 
 #include "dispatcher.h"
 #include "task.h"
+#include "scheduler.h"
 #include "lib/pplibc.h"
 #include "macros.h"
 #include "lib/queue.h"
@@ -41,7 +42,7 @@ void dispatcher()
 
 	while(queue_size(queue_ready) > 0)
 	{
-		//next_task = scheduler();
+		//next_task = scheduler(queue_ready);
 		next_task = (struct task_t*)queue_head(queue_ready);
 		if(next_task)
 		{
@@ -49,13 +50,16 @@ void dispatcher()
 			switch(next_task->status)
 			{
 				case READY:
+					//TODO
 					break;
 				case SUSPENDED:
+					//TODO
 					break;
 				case FINISHED:
 					task_destroy(next_task);
 					break;
 				default:
+					//TODO
 					break;
 			}
 		}
@@ -70,16 +74,16 @@ int task_switch(struct task_t *task) {
 	struct task_t* next_task = task;
 	struct task_t* old_task = curr_task;
 
-	if (!task) 
-		next_task = curr_task->parent;	
+	if (!task) next_task = curr_task->parent;	
+
 	if (!next_task) return ERROR;
 
 	curr_task = next_task;
 
 	ppos_debug("task %d (%s) switched to task %d (%s)\n", old_task->id, old_task->name, next_task->id, next_task->name);
 
-	if (old_task->status != FINISHED)
-		old_task->status = READY;
+	if (old_task->status != FINISHED) old_task->status = READY;
+
 	next_task->status = RUNNING;
 
 	int status = ctx_switch(&(old_task->context), &(next_task->context));
@@ -97,8 +101,7 @@ int task_switch(struct task_t *task) {
 
 void task_run(struct task_t *task)
 {
-	if(queue_del(queue_ready, task) == ERROR) 
-		return;
+	if(queue_del(queue_ready, task) == ERROR) return;
 	
 	task->status = RUNNING;
 	task_switch(task);
@@ -107,8 +110,7 @@ void task_run(struct task_t *task)
 
 void task_suspend(struct queue_t *queue)
 {	
-	if(!curr_task || !queue)
-		return;
+	if(!curr_task || !queue) return;
 
 	curr_task->status = SUSPENDED;
 	queue_add(queue, curr_task);
