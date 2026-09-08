@@ -42,8 +42,8 @@ void dispatcher()
 
 	while(queue_size(queue_ready) > 0)
 	{
-		//next_task = scheduler(queue_ready);
-		next_task = (struct task_t*)queue_head(queue_ready);
+		next_task = scheduler(queue_ready);
+		//next_task = (struct task_t*)queue_head(queue_ready);
 		if(next_task)
 		{
 			task_run(next_task);
