@@ -35,6 +35,8 @@ struct task_t
     char *name;				// nome da tarefa
     ctx_t context;			// contexto da tarefa
     t_status status;		// pronta, executando, ...
+	int user;				// eh tarefa de usuario
+	int quantum;			// quantum atual da tarefa
 	char* stack;			// stack
 	int vg_id;				// valgrind id
 	int static_priority;	// prioridade estática da tarefa
