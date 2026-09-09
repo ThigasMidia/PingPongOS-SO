@@ -59,6 +59,8 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->id = next_t_id;
 	task->status = READY;
 	task->parent = curr_task;
+	task->static_priority = 0;
+	task->dynamic_priority = 0;
 
 	next_t_id++;						// Incrementa o próximo ID
 	
@@ -67,6 +69,7 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 		mem_free(task);						// (!) Verificar se é necessário trocar por destroy_task()
 		return NULL;
 	}
+	task->vg_id = VALGRIND_STACK_REGISTER(task->stack, task->stack + STACKSIZE);
 
     //VALGRIND_STACK_REGISTER(stack, stack + STACKSIZE);	// Registra pilha no Valgrind
 
@@ -75,6 +78,7 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	if (status == ERROR){
 		mem_free(task);						// (!) Verificar se é necessário trocar por destroy_task()
 		mem_free(stack);
+		VALGRIND_STACK_DEREGISTER(task->vg_id);
 		return NULL;
 	}
 
@@ -93,7 +97,12 @@ int task_destroy(struct task_t *task){
 	
 	if (!task) return ERROR;
 	ppos_debug("task %d (%s) destroy task %d (%s)\n",curr_task->id, curr_task->name, task->id, task->name);
-	if (task->stack) mem_free(task->stack);
+
+	if (task->stack){
+		mem_free(task->stack);
+		VALGRIND_STACK_DEREGISTER(task->vg_id);
+	}
+	
 	mem_free(task);
 
 
@@ -126,7 +135,7 @@ void task_yield()
 	task_switch(&task_kernel);
 }
 
-
+/*
 int task_wait(struct task_t *task)
 {
 }
@@ -134,7 +143,7 @@ int task_wait(struct task_t *task)
 
 void task_sleep(int t)
 {
-}
+}*/
 
 
 void task_exit(int exit_code)

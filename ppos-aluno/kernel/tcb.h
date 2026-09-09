@@ -12,6 +12,7 @@
 #define __PPOS_TCB__
 
 #include "ctx.h"
+#include <valgrind/valgrind.h>
 
 extern struct queue_t *queue_ready; 
 extern struct task_t task_kernel;		// Variável global com a tarefa inicial (kernel)
@@ -35,6 +36,9 @@ struct task_t
     ctx_t context;			// contexto da tarefa
     t_status status;		// pronta, executando, ...
 	char* stack;			// stack
+	int vg_id;				// valgrind id
+	int static_priority;	// prioridade estática da tarefa
+	int dynamic_priority;	// prioridade dinâmica da tarefa
 	
 	struct task_t* parent;	// tarefa pai
 };
