@@ -9,6 +9,7 @@
 #include "dispatcher.h"
 #include "task.h"
 #include "scheduler.h"
+#include "time.h"
 #include "lib/pplibc.h"
 #include "macros.h"
 #include "lib/queue.h"
@@ -79,6 +80,8 @@ int task_switch(struct task_t *task) {
 	if (!next_task) return ERROR;
 
 	curr_task = next_task;
+
+	next_task->quantum = QUANTUM;
 
 	ppos_debug("task %d (%s) switched to task %d (%s)\n", old_task->id, old_task->name, next_task->id, next_task->name);
 

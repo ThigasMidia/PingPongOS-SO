@@ -30,6 +30,7 @@ void task_init()
 	// Inicia uma tarefa do kernel "task_kernel", com nome “kernel” e ID 0.
 	
 	task_kernel.id = 0;
+	task_kernel.user = 0;
 	task_kernel.name = "kernel";
 	task_kernel.status = RUNNING;
 	task_kernel.stack = NULL;
@@ -58,6 +59,8 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->name = name;
 	task->id = next_t_id;
 	task->status = READY;
+	task->quantum = 0;
+	task->user = 1;
 	task->parent = curr_task;
 	task->static_priority = 0;
 	task->dynamic_priority = 0;
