@@ -40,7 +40,6 @@ void dispatcher()
 	struct task_t* task_user,* next_task;
 	task_user = task_create("user_main", user_main, NULL);
 	task_switch(task_user);
-
 	while(queue_size(queue_ready) > 0)
 	{
 		next_task = scheduler(queue_ready);
@@ -81,7 +80,11 @@ int task_switch(struct task_t *task) {
 
 	curr_task = next_task;
 
+	old_task->cpu_time += (time() - old_task->last_time_used);
+	curr_task->last_time_used = time();
+
 	next_task->quantum = QUANTUM;
+	next_task->acts++;
 
 	ppos_debug("task %d (%s) switched to task %d (%s)\n", old_task->id, old_task->name, next_task->id, next_task->name);
 

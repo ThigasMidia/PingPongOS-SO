@@ -13,6 +13,7 @@
 #include "task.h"
 #include "memory.h"
 #include "macros.h"
+#include "time.h"
 #include "lib/pplibc.h"
 #include "lib/queue.h"
 
@@ -35,6 +36,9 @@ void task_init()
 	task_kernel.status = RUNNING;
 	task_kernel.stack = NULL;
 	task_kernel.parent = NULL;
+	task_kernel.acts = 1;
+	task_kernel.start_time = 0;
+	task_kernel.cpu_time = 0;
 
 	next_t_id++;				// Incrementa o próximo ID
 	
@@ -46,6 +50,8 @@ void task_init()
 
 void task_term()
 {
+   	printk("PPOS: task %3d (%s) %6d ms run, %6d ms cpu, %5d acts, exit code %3d\n", 
+		curr_task->id, curr_task->name, time() - curr_task->start_time, curr_task->cpu_time, curr_task->acts, 0);
 }
 
 
@@ -63,7 +69,10 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->user = 1;
 	task->parent = curr_task;
 	task->static_priority = 0;
-	task->dynamic_priority = 0;
+	task->acts = 0;
+	task->start_time = time();
+	task->last_time_used = task->start_time;
+	task->cpu_time = 0;
 
 	next_t_id++;						// Incrementa o próximo ID
 	
@@ -100,6 +109,8 @@ int task_destroy(struct task_t *task){
 	
 	if (!task) return ERROR;
 	ppos_debug("task %d (%s) destroy task %d (%s)\n",curr_task->id, curr_task->name, task->id, task->name);
+   	printk("PPOS: task %3d (%s) %6d ms run, %6d ms cpu, %5d acts, exit code %3d\n", 
+		task->id, task->name, time() - task->start_time, task->cpu_time, task->acts, 0);
 
 	if (task->stack){
 		mem_free(task->stack);

@@ -7,9 +7,9 @@
 
 // Gerência básica do tempo.
 #include "hardware/cpu.h"
-#include "task.h"
 #include "macros.h"
 #include "time.h"
+#include "dispatcher.h"
 
 #define QUANTUM 10
 
@@ -17,6 +17,7 @@ int ppos_time = 0;
 
 extern struct task_t* curr_task;
 
+void task_yield();
 void tick_handler();
 
 void time_init()
@@ -32,6 +33,7 @@ void time_term()
     hw_timer(0, 0);
 }
 
+//Funcao handler de IRQ_TIMER
 void tick_handler()
 {
     ppos_time++;
@@ -47,7 +49,6 @@ void tick_handler()
 
 unsigned int time()
 {
-    //return (ppos_time);
-    return (0);
+    return (ppos_time);
 }
 
