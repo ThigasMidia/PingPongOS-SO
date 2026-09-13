@@ -33,13 +33,25 @@ void dispatcher_term()
 	queue_destroy(queue_suspended);
 }
 
+void tick_handler_disp(){
+	// Função ativada a cada tick
+	if(curr_task->user) {
+		curr_task->quantum--;
+
+		if(curr_task->quantum <= 0) {
+			ppos_debug("tick handler: task %d (%s) preempted\n", curr_task->id, curr_task->name);
+			task_yield();
+		}
+	}
+}
+
 //Dispatcher simples para execucao de tarefa user_main.
 void dispatcher()
 {
 	ppos_debug("dispatcher started\n");
 	struct task_t* task_user,* next_task;
 	task_user = task_create("user_main", user_main, NULL);
-	task_switch(task_user);
+
 	while(queue_size(queue_ready) > 0)
 	{
 		next_task = scheduler(queue_ready);
@@ -64,7 +76,6 @@ void dispatcher()
 			}
 		}
 	}
-	task_destroy(task_user);
 }
 
 int task_switch(struct task_t *task) {
@@ -79,9 +90,10 @@ int task_switch(struct task_t *task) {
 	if (!next_task) return ERROR;
 
 	curr_task = next_task;
+	unsigned int curr_time = time();
 
-	old_task->cpu_time += (time() - old_task->last_time_used);
-	curr_task->last_time_used = time();
+	old_task->cpu_time += (curr_time - old_task->last_time_used);
+	curr_task->last_time_used = curr_time;
 
 	next_task->quantum = QUANTUM;
 	next_task->acts++;

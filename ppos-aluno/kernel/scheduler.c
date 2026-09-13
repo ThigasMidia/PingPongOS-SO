@@ -14,6 +14,7 @@
 
 #define AGING_STEP 1	
 
+
 void sched_init()
 {
 	ppos_debug("subsystem scheduler initiated\n");
@@ -24,17 +25,20 @@ void sched_term()
 	ppos_debug("scheduler stopping\n");
 }
 
-
 struct task_t *select_next_task(struct queue_t *ready_queue){
 	struct task_t* curr = (struct task_t*) queue_head(ready_queue); 
 	struct task_t* best = NULL;
+
+	ppos_debug("QUEUE: ");
 
 	while (curr != NULL) {
 		if (best == NULL || curr->dynamic_priority < best->dynamic_priority)
 			best = curr;
 
+		ppos_debug("%d(%d) ", curr->id, curr->dynamic_priority);
 		curr = (struct task_t*) queue_next(ready_queue);
 	}
+	ppos_debug("\n");
 	return best;
 }
 
@@ -49,8 +53,10 @@ struct task_t *scheduler(struct queue_t *ready_queue)
 	// Envelhece as tarefas não escolhidas
 	struct task_t* curr = (struct task_t*) queue_head(ready_queue);
 	while (curr != NULL){
-		if (curr != best)
+		if (curr != best){
 			curr->dynamic_priority -= AGING_STEP;
+			ppos_debug("task %d (%s) aged with priority %d\n", curr->id, curr->name, curr->dynamic_priority);
+		}
 		curr = (struct task_t*) queue_next(ready_queue);
 	}
 
