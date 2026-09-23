@@ -49,13 +49,12 @@ void tick_handler_disp(){
 void dispatcher()
 {
 	ppos_debug("dispatcher started\n");
-	struct task_t* task_user,* next_task;
-	task_user = task_create("user_main", user_main, NULL);
+	struct task_t* next_task;
 
+	task_create("user_main", user_main, NULL);
 	while(queue_size(queue_ready) > 0)
 	{
 		next_task = scheduler(queue_ready);
-		//next_task = (struct task_t*)queue_head(queue_ready);
 		if(next_task)
 		{
 			task_run(next_task);
