@@ -7,20 +7,21 @@
 
 // Gerência básica do tempo.
 #include "hardware/cpu.h"
-#include "task.h"
 #include "macros.h"
 #include "time.h"
+//#include "dispatcher.h"
 
-#define QUANTUM 10
+unsigned int ppos_time;
 
-int ppos_time = 0;
-
-extern struct task_t* curr_task;
-
-void tick_handler();
+void tick_handler();				// definido em time.c
+void tick_handler_disp();			// definido em dispatcher.c
 
 void time_init()
 {
+	// inicializa variável global
+	ppos_time = 0;
+
+	// inicializa funções do emulador de hardware
     hw_irq_enable(1);
     hw_timer(1, 1);
     hw_irq_handle(IRQ_TIMER, tick_handler);
@@ -32,22 +33,15 @@ void time_term()
     hw_timer(0, 0);
 }
 
+//Funcao handler de IRQ_TIMER
 void tick_handler()
 {
     ppos_time++;
-
-    if(curr_task->user) curr_task->quantum--;
-
-    if(curr_task->quantum <= 0) {
-        ppos_debug("tick handler: task %d (%s) preempted\n", curr_task->id, curr_task->name);
-        task_yield();
-    }
-    
+	tick_handler_disp();
 }
 
 unsigned int time()
 {
-    //return (ppos_time);
-    return (0);
+    return (ppos_time);
 }
 

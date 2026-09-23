@@ -35,12 +35,21 @@ struct task_t
     char *name;				// nome da tarefa
     ctx_t context;			// contexto da tarefa
     t_status status;		// pronta, executando, ...
-	int user;				// eh tarefa de usuario
+
+	int user;				// flag de tarefa (1 = usuário; 0 = kernel)
 	int quantum;			// quantum atual da tarefa
+
 	char* stack;			// stack
+
 	int vg_id;				// valgrind id
+
 	int static_priority;	// prioridade estática da tarefa
 	int dynamic_priority;	// prioridade dinâmica da tarefa
+
+	unsigned int acts;              // quantas vezes a tarefa recebeu cpu
+	unsigned int start_time;        // tempo do sistema quando a tarefa iniciou
+	unsigned int last_time_used;	// tempo do sistema em que a tarefa estava ativa pela ultima vez
+	unsigned int cpu_time;			// tempo em que a tarefa usou cpu
 	
 	struct task_t* parent;	// tarefa pai
 };
