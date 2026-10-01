@@ -46,6 +46,8 @@ struct task_t
 	int static_priority;	// prioridade estática da tarefa
 	int dynamic_priority;	// prioridade dinâmica da tarefa
 
+    int exit_code;          // exit code da task
+
 	unsigned int acts;              // quantas vezes a tarefa recebeu cpu
 	unsigned int start_time;        // tempo do sistema quando a tarefa iniciou
 	unsigned int last_time_used;	// tempo do sistema em que a tarefa estava ativa pela ultima vez

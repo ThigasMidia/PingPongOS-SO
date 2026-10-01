@@ -21,7 +21,11 @@ struct task_t task_kernel;		// Variável global com a tarefa inicial (kernel)
 struct task_t* curr_task;		// Tarefa atual (contexto atual)
 
 extern struct queue_t* queue_ready;
+extern struct queue_t *queue_suspended;
+
 extern int task_switch(struct task_t* task);
+extern void task_suspend(struct queue_t *queue);
+extern void task_awake(struct task_t *task);
 
 int next_t_id = 0;						// Próximo ID a ser definido a uma tarefa
 
@@ -73,6 +77,7 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->start_time = time();
 	task->last_time_used = task->start_time;
 	task->cpu_time = 0;
+    task->exit_code = NOERROR;
 
 	next_t_id++;						// Incrementa o próximo ID
 	
@@ -109,6 +114,8 @@ int task_destroy(struct task_t *task){
 	
 	if (!task) return ERROR;
 	ppos_debug("task %d (%s) destroy task %d (%s)\n",curr_task->id, curr_task->name, task->id, task->name);
+
+    while(queue_size(queue_suspended) > 0) task_awake(queue_head(queue_suspended));
 
 	if (task->stack){
 		VALGRIND_STACK_DEREGISTER(task->vg_id);
@@ -147,15 +154,23 @@ void task_yield()
 	task_switch(&task_kernel);
 }
 
-/*
+
 int task_wait(struct task_t *task)
 {
+    if(!task) return ERROR;
+
+    if(task->status == FINISHED) return task->exit_code;
+    
+    task_suspend(queue_suspended);
+
+    return task->exit_code;
 }
 
-
+/*
 void task_sleep(int t)
 {
-}*/
+}
+*/
 
 
 void task_exit(int exit_code)
@@ -163,6 +178,7 @@ void task_exit(int exit_code)
 	struct task_t* task = curr_task;
 	
 	task->status = FINISHED;
+    task->exit_code = exit_code;
 	if(queue_has(queue_ready, task)) queue_del(queue_ready, task);
 
 	ppos_debug("task %d (%s) exited with code %d\n", curr_task->id, curr_task->name, exit_code);

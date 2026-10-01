@@ -68,6 +68,8 @@ void dispatcher()
 					break;
 				case FINISHED:
 					task_destroy(next_task);
+                    
+                    while(queue_size(queue_suspended) > 0) task_awake(queue_head(queue_suspended));
 					break;
 				default:
 					//TODO
