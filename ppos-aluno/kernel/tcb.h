@@ -48,6 +48,8 @@ struct task_t
 
     int exit_code;          // exit code da task
 
+    struct queue_t *tasks_waiting;  // fila com as tarefas que esperam essa finalizar
+
 	unsigned int acts;              // quantas vezes a tarefa recebeu cpu
 	unsigned int start_time;        // tempo do sistema quando a tarefa iniciou
 	unsigned int last_time_used;	// tempo do sistema em que a tarefa estava ativa pela ultima vez
