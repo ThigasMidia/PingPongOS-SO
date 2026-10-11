@@ -21,6 +21,7 @@ struct task_t task_kernel;		// Variável global com a tarefa inicial (kernel)
 struct task_t* curr_task;		// Tarefa atual (contexto atual)
 
 extern struct queue_t* queue_ready;
+extern struct queue_t* queue_sleeping;
 
 extern int task_switch(struct task_t* task);
 extern void task_suspend(struct queue_t *queue);
@@ -42,7 +43,8 @@ void task_init()
 	task_kernel.acts = 1;
 	task_kernel.start_time = 0;
 	task_kernel.cpu_time = 0;
-    task_kernel.tasks_waiting = queue_create();
+    task_kernel.tasks_waiting = NULL;
+	task_kernel.wakeup_time = 0;
 
 	next_t_id++;				// Incrementa o próximo ID
 	
@@ -77,6 +79,7 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->start_time = time();
 	task->last_time_used = task->start_time;
 	task->cpu_time = 0;
+	task->wakeup_time = 0;
     task->tasks_waiting = queue_create();
 
 	next_t_id++;						// Incrementa o próximo ID
@@ -159,18 +162,34 @@ int task_wait(struct task_t *task)
     if(!task) return ERROR;
 
     if(task->status == FINISHED) return task->exit_code;
-    
     task_suspend(task->tasks_waiting);
 
-    printk("O TASK CODE É:      %d\n", task->exit_code);
     return task->exit_code;
 }
 
-/*
+
 void task_sleep(int t)
 {
+	if (t <= 0){ 
+		ppos_debug("Task %d will not sleep\n", curr_task->id);
+		return;
+	}
+
+	// A tarefa pode ser preemptada entre a remocao e a insercao nas filas.
+	hw_irq_enable(0);
+
+	int wakeup_time = time() + t;
+	
+	ppos_debug("Task %d will sleep until %dms\n", curr_task->id, wakeup_time);
+	curr_task->wakeup_time = wakeup_time;
+
+	queue_del(queue_ready, curr_task);
+	curr_task->status = SUSPENDED;
+	queue_add(queue_sleeping, curr_task);
+
+	hw_irq_enable(1);
+	task_switch(&task_kernel);
 }
-*/
 
 
 void task_exit(int exit_code)

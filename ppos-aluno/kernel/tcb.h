@@ -55,6 +55,8 @@ struct task_t
 	unsigned int last_time_used;	// tempo do sistema em que a tarefa estava ativa pela ultima vez
 	unsigned int cpu_time;			// tempo em que a tarefa usou cpu
 	
+	int wakeup_time;		// tempo para "acordar", quando tarefa estiver adormecida
+	
 	struct task_t* parent;	// tarefa pai
 };
 
