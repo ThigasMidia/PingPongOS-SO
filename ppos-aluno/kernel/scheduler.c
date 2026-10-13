@@ -29,16 +29,12 @@ struct task_t *select_next_task(struct queue_t *ready_queue){
 	struct task_t* curr = (struct task_t*) queue_head(ready_queue); 
 	struct task_t* best = NULL;
 
-	ppos_debug("QUEUE: ");
-
 	while (curr != NULL) {
 		if (best == NULL || curr->dynamic_priority < best->dynamic_priority)
 			best = curr;
 
-		ppos_debug("%d(%d) ", curr->id, curr->dynamic_priority);
 		curr = (struct task_t*) queue_next(ready_queue);
 	}
-	ppos_debug("\n");
 	return best;
 }
 

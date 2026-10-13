@@ -21,7 +21,11 @@ struct task_t task_kernel;		// Variável global com a tarefa inicial (kernel)
 struct task_t* curr_task;		// Tarefa atual (contexto atual)
 
 extern struct queue_t* queue_ready;
+extern struct queue_t* queue_sleeping;
+
 extern int task_switch(struct task_t* task);
+extern void task_suspend(struct queue_t *queue);
+extern void task_awake(struct task_t *task);
 
 int next_t_id = 0;						// Próximo ID a ser definido a uma tarefa
 
@@ -39,6 +43,8 @@ void task_init()
 	task_kernel.acts = 1;
 	task_kernel.start_time = 0;
 	task_kernel.cpu_time = 0;
+    task_kernel.tasks_waiting = NULL;
+	task_kernel.wakeup_time = 0;
 
 	next_t_id++;				// Incrementa o próximo ID
 	
@@ -73,6 +79,8 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->start_time = time();
 	task->last_time_used = task->start_time;
 	task->cpu_time = 0;
+	task->wakeup_time = 0;
+    task->tasks_waiting = queue_create();
 
 	next_t_id++;						// Incrementa o próximo ID
 	
@@ -115,6 +123,7 @@ int task_destroy(struct task_t *task){
 		mem_free(task->stack);
 	}
 	
+    queue_destroy(task->tasks_waiting);
 	mem_free(task);
 
 
@@ -147,15 +156,40 @@ void task_yield()
 	task_switch(&task_kernel);
 }
 
-/*
+
 int task_wait(struct task_t *task)
 {
+    if(!task) return ERROR;
+
+    if(task->status == FINISHED) return task->exit_code;
+    task_suspend(task->tasks_waiting);
+
+    return task->exit_code;
 }
 
 
 void task_sleep(int t)
 {
-}*/
+	if (t <= 0){ 
+		ppos_debug("Task %d will not sleep\n", curr_task->id);
+		return;
+	}
+
+	// A tarefa pode ser preemptada entre a remocao e a insercao nas filas.
+	hw_irq_enable(0);
+
+	int wakeup_time = time() + t;
+	
+	ppos_debug("Task %d will sleep until %dms\n", curr_task->id, wakeup_time);
+	curr_task->wakeup_time = wakeup_time;
+
+	queue_del(queue_ready, curr_task);
+	curr_task->status = SUSPENDED;
+	queue_add(queue_sleeping, curr_task);
+
+	hw_irq_enable(1);
+	task_switch(&task_kernel);
+}
 
 
 void task_exit(int exit_code)
@@ -163,11 +197,20 @@ void task_exit(int exit_code)
 	struct task_t* task = curr_task;
 	
 	task->status = FINISHED;
+    task->exit_code = exit_code;
+
+    while(queue_size(task->tasks_waiting) > 0) 
+    {
+        struct task_t *woken_task = queue_head(task->tasks_waiting);
+        queue_del(task->tasks_waiting, woken_task);
+        task_awake(woken_task);
+    }
+
 	if(queue_has(queue_ready, task)) queue_del(queue_ready, task);
 
 	ppos_debug("task %d (%s) exited with code %d\n", curr_task->id, curr_task->name, exit_code);
    	printk("PPOS: task %3d (%s) %6d ms run, %6d ms cpu, %5d acts, exit code %3d\n", 
-		   task->id, task->name, time() - task->start_time, task->cpu_time, task->acts, 0);
+		   task->id, task->name, time() - task->start_time, task->cpu_time, task->acts, task->exit_code);
 
 	task_switch(&task_kernel);
 }

@@ -16,21 +16,21 @@
 #include <stdio.h>
 
 extern void user_main (void *arg);
-struct queue_t *queue_ready;
-struct queue_t *queue_suspended;
+struct queue_t *queue_ready = NULL;
+struct queue_t *queue_sleeping = NULL;
 
 void dispatcher_init()
 {
 	ppos_debug("subsystem dispatcher initiated\n");
 	queue_ready = queue_create();
-	queue_suspended = queue_create();
+	queue_sleeping = queue_create();
 }
 
 void dispatcher_term()
 {		
 	ppos_debug("dispatcher stopping, no more user tasks\n");
 	queue_destroy(queue_ready);
-	queue_destroy(queue_suspended);
+	queue_destroy(queue_sleeping);
 }
 
 void tick_handler_disp(){
@@ -45,36 +45,39 @@ void tick_handler_disp(){
 	}
 }
 
+// Função que verifica se alguma tarefa pode ser acordada
+void wakeup_tasks(){
+	struct task_t *temp = queue_head(queue_sleeping);
+	int curr_time = time();
+	hw_irq_enable(0);
+
+	while (temp != NULL){
+		if (curr_time >= temp->wakeup_time){
+			queue_del(queue_sleeping, temp);
+			task_awake(temp);
+			temp = queue_item(queue_sleeping);
+		} else temp = queue_next(queue_sleeping);
+	}
+
+	hw_irq_enable(1);
+}
+
 //Dispatcher simples para execucao de tarefa user_main.
 void dispatcher()
 {
 	ppos_debug("dispatcher started\n");
-	struct task_t* next_task;
+	struct task_t* next_task = NULL;
 
-	task_create("user_main", user_main, NULL);
-	while(queue_size(queue_ready) > 0)
+	struct task_t *task_user = task_create("user_main", user_main, NULL);
+	while(queue_size(queue_ready) > 0 || queue_size(queue_sleeping) > 0)
 	{
+		wakeup_tasks();
+
 		next_task = scheduler(queue_ready);
-		if(next_task)
-		{
-			task_run(next_task);
-			switch(next_task->status)
-			{
-				case READY:
-					//TODO
-					break;
-				case SUSPENDED:
-					//TODO
-					break;
-				case FINISHED:
-					task_destroy(next_task);
-					break;
-				default:
-					//TODO
-					break;
-			}
-		}
+		if (next_task) task_run(next_task);
+	
 	}
+    task_destroy(task_user);
 }
 
 int task_switch(struct task_t *task) {
@@ -128,6 +131,7 @@ void task_run(struct task_t *task)
 void task_suspend(struct queue_t *queue)
 {	
 	if(!curr_task || !queue) return;
+	ppos_debug("Suspending task %d\n", curr_task->id);
 
 	curr_task->status = SUSPENDED;
 	queue_add(queue, curr_task);
@@ -137,9 +141,8 @@ void task_suspend(struct queue_t *queue)
 
 void task_awake(struct task_t *task)
 {
-	if(queue_has(queue_suspended, task))
-		queue_del(queue_suspended, task);
-
+    
+	ppos_debug("task %d (%s) woke up.\n", task->id, task->name);
 	task->status = READY;
 	queue_add(queue_ready, task);
 }
