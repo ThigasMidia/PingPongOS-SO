@@ -7,20 +7,18 @@
 // Semáforos e spinlocks
 
 #include "task.h"
+#include "lib/map.h"
 #include "memory.h"
 #include "queue.h"
-#include <assert.h>
-#include "lib/pplibc.h"
-#include "syscall.h"
 
 #define NOERROR 0
 #define ERROR -1
+#define SEMAPHORE_QUANTITY 100
 
 extern void task_suspend(struct queue_t *queue);
 extern void task_awake(struct task_t *task);
 
-struct semaphore **semaphore_array;
-int next_semaphore_id = 0;
+struct map_t *semaphore_map;
 
 struct semaphore
 {
@@ -33,12 +31,12 @@ struct semaphore
 
 void sem_init()
 {
-    semaphore_array = (struct semaphore**) mem_alloc(sizeof(struct semaphore*) * 100);
+    semaphore_map = map_create(SEMAPHORE_QUANTITY);
 }
 
 void sem_term()
 {
-    mem_free(semaphore_array);
+    map_destroy(semaphore_map);
 }
 
 void spin_lock(int *lock)
@@ -59,35 +57,40 @@ int sem_create(int value)
     if (!semaphore) return ERROR;
 
     semaphore->s_counter = value;
-    semaphore->s_id = next_semaphore_id;
     semaphore->s_queue = queue_create();
     semaphore->s_lock = 0;
+    semaphore->s_id = 0;
 
-    semaphore_array[next_semaphore_id] = semaphore;
-
-    next_semaphore_id++;
+    semaphore->s_id = map_put(semaphore_map, semaphore);
 
     return semaphore->s_id;
 }
 
 int sem_destroy(int sem_id)
 {  
-    printk("TA DESTRUINDO O SEMAFOROOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n");
-    if(!semaphore_array[sem_id]) return ERROR;
+    struct semaphore *semaphore = map_get(semaphore_map, sem_id);
+    if(!semaphore) return ERROR;
 
-    queue_destroy(semaphore_array[sem_id]->s_queue); // Libera fila associada ao semaforo
-    mem_free(semaphore_array[sem_id]); // Libera semaforo
+    while(queue_size(semaphore->s_queue))
+    {
+        struct task_t *awoken_task = queue_head(semaphore->s_queue);
+        queue_del(semaphore->s_queue, awoken_task);
+        task_awake(awoken_task);
+    }
+    queue_destroy(semaphore->s_queue);  // Libera fila associada ao semaforo
+    map_del(semaphore_map, sem_id);     //Deleta do mapa
+    mem_free(semaphore);                // Libera semaforo
     
-    semaphore_array[sem_id] = NULL;
+    semaphore = NULL;
 
     return NOERROR;
 }
 
 int sem_down(int sem_id)
 {   
-    if(!semaphore_array[sem_id]) return ERROR;
+    struct semaphore *semaphore = map_get(semaphore_map, sem_id);
+    if(!semaphore) return ERROR;
 
-    struct semaphore *semaphore = semaphore_array[sem_id];
     spin_lock(&semaphore->s_lock);
 
     semaphore->s_counter--;
@@ -96,6 +99,8 @@ int sem_down(int sem_id)
     if(semaphore->s_counter < 0) {
         spin_unlock(&semaphore->s_lock);
         task_suspend(semaphore->s_queue);
+        if(!semaphore)
+            return ERROR;
     } else spin_unlock(&semaphore->s_lock);
     
     return NOERROR;
@@ -103,9 +108,9 @@ int sem_down(int sem_id)
 
 int sem_up(int sem_id)
 {
-    if(!semaphore_array[sem_id]) return ERROR;
+    struct semaphore *semaphore = map_get(semaphore_map, sem_id);
+    if(!semaphore) return ERROR;
 
-    struct semaphore *semaphore = semaphore_array[sem_id];
     spin_lock(&semaphore->s_lock);
 
     semaphore->s_counter++;

@@ -28,7 +28,7 @@ struct map_t *map_create(int size){
 	map_t* map = (map_t*) malloc(sizeof(map_t));
 	if (!map) return NULL;
 
-	map->items = (void**) malloc(size*sizeof(void*));
+	map->items = (void**) calloc(size, sizeof(void*));
 	if (!map->items){
 		free(map);
 		return NULL;
