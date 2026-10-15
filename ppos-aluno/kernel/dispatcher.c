@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 extern void user_main (void *arg);
+
 struct queue_t *queue_ready = NULL;
 struct queue_t *queue_sleeping = NULL;
 

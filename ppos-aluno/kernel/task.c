@@ -75,6 +75,7 @@ struct task_t * task_create(char *name, void (*entry)(void *), void *arg){
 	task->user = 1;
 	task->parent = curr_task;
 	task->static_priority = 0;
+	task->dynamic_priority = 0;
 	task->acts = 0;
 	task->start_time = time();
 	task->last_time_used = task->start_time;
