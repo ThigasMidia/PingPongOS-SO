@@ -24,36 +24,61 @@ void body_producer(void *arg)
     {
         task_sleep(1000);
 
+        // Cria o item
         int *item = malloc(sizeof(int));
         *item = rand() % 100;
 
-        sem_down(sem_vaga);
-        sem_down(sem_buffer);
+        // Pede acesso ao semaforo, juntamente de check se semaforo foi destruido
+        if(sem_down(sem_vaga) < 0) {
+            free(item);
+            task_exit(ERROR);
+        }
+        if(sem_down(sem_buffer) < 0) {
+            free(item);
+            sem_up(sem_item);
+            task_exit(ERROR);
+        }
 
+        // Adiciona  o item no buffer
         queue_add(buffer, (int*)item);
         printk("%s produziu %d\n", (char *)arg, *item);
 
+        // Libera semaforos
         sem_up(sem_buffer);
         sem_up(sem_item);
     }
+
+    task_exit(NOERROR);
 }
 
 void body_consumer(void *arg)
 {  
     while(1)
     {
-        sem_down(sem_item);
 
-        sem_down(sem_buffer);
+        // Pede acesso ao semaforo, juntamente de check se semaforo foi destruido
+        if(sem_down(sem_item) < 0) {
+            task_exit(ERROR);
+        }
+        if(sem_down(sem_buffer) < 0 ) {
+            sem_up(sem_item);
+            task_exit(ERROR);
+        }
+
+        // Consome item do buffer
         int *item = queue_head(buffer);
         printk("%s consumiu %d\n", (char *)arg, *item);
         queue_del(buffer, item);
-        sem_up(sem_buffer);
+        free(item);
 
+        // Libera semaforos
+        sem_up(sem_buffer);
         sem_up(sem_vaga);
 
         task_sleep(1000);
     }
+
+    task_exit(NOERROR);
 }
 
 void user_main(void *arg) 
@@ -93,7 +118,39 @@ void user_main(void *arg)
     cons2 = task_create("b2", body_consumer, "\t\t\tC2");
     assert(cons2);
 
+    // deixa programa rodar
+    task_sleep(15000);
 
-    status = task_wait(prod1);
+    // destroi semaforos
+    status = sem_destroy(sem_buffer);
     assert(status == NOERROR);
+    status = sem_destroy(sem_item);
+    assert(status == NOERROR);
+    status = sem_destroy(sem_vaga);
+    assert(status == NOERROR);
+
+    // espera tarefas terminarem
+    task_wait(prod1);
+    task_wait(prod2);
+    task_wait(prod3);
+    task_wait(cons1);
+    task_wait(cons2);
+
+    // destroi tarefas
+    task_destroy(prod1);
+    task_destroy(prod2);
+    task_destroy(prod3);
+    task_destroy(cons1);
+    task_destroy(cons2);
+
+    // esvazia e destroi buffer
+    while(queue_size(buffer)) {
+        int *item = queue_head(buffer);
+        queue_del(buffer, item);
+        free(item);
+    }
+    queue_destroy(buffer);
+
+    printk("%5u ms: %s fim\n", time(), name);
+    task_exit(NOERROR);
 }
