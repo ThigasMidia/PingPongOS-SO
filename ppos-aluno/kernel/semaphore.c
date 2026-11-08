@@ -96,12 +96,12 @@ int sem_down(int sem_id)
     semaphore->s_counter--;
 
     // Se o semaforo fechou
-    if(semaphore->s_counter < 0) {
-        spin_unlock(&semaphore->s_lock);
-        task_suspend(semaphore->s_queue);
-        if(!semaphore)
-            return ERROR;
-    } else spin_unlock(&semaphore->s_lock);
+	if(semaphore->s_counter < 0) {
+		spin_unlock(&semaphore->s_lock);
+		task_suspend(semaphore->s_queue);
+		if(!map_get(semaphore_map, sem_id))
+			return ERROR;
+	} else spin_unlock(&semaphore->s_lock);
     
     return NOERROR;
 }
