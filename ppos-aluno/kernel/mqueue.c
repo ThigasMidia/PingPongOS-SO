@@ -83,12 +83,23 @@ int mqueue_destroy(int mqueue_id){
 	if (!mqueue) return ERROR;
 
 	// Realiza free das estruturas alocadas
-	int res_q = queue_destroy(mqueue->buffer);
 	int res_sv = sem_destroy(mqueue->sem_vaga);
 	int res_sb = sem_destroy(mqueue->sem_buffer);
 	int res_si = sem_destroy(mqueue->sem_item);
 
+	// Realize free dos itens alocados pelo buffer
+	while (queue_size(mqueue->buffer) > 0) {
+		void *msg = queue_head(mqueue->buffer);
+
+		queue_del(mqueue->buffer, msg);
+		free(msg);
+	}
+	int res_q = queue_destroy(mqueue->buffer);
+
 	if ((res_q == ERROR) || (res_sv == ERROR) || (res_sb == ERROR) || (res_si == ERROR)) return ERROR;
+
+	// Retira estrutura do mapa
+	if (!map_del(queue_map, mqueue_id)) return ERROR;
 
 	free(mqueue);
 	mqueue = NULL;
