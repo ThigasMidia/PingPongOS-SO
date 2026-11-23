@@ -9,25 +9,128 @@
 // somente para a implementação trivial
 #include <stdlib.h>
 #include "ctx.h"
+#include "lib/pplibc.h"
 
-// implementação trivial, a ser substituída
+#define HEAP_SIZE 64*1024*1024 //2^26, entao precisa de 26 bits
+#define MAX_BLOCKS HEAP_SIZE / 16
+
+static char heap[HEAP_SIZE];
+
+typedef struct {
+    void* initial_address;
+    char alocated;
+    char active;
+    int size;
+    int left_neighbor_id;
+    int right_neighbor_id;
+} block_descriptor;
+
+static block_descriptor descriptor_array[MAX_BLOCKS];
+
+int bytes_allocated = 0;
+int blocks_allocated = 0;
+
 void *mem_alloc(int size)
 {
-    return (malloc(size));
+    if(size <= 0) return NULL;
+    size = ((size - 1) | 0x00000F) + 1;
+
+    int block_adress = 0;
+    //procura bloco de tamanho maior ou igual
+    while(block_adress != -1) {
+        if(!descriptor_array[block_adress].alocated && descriptor_array[block_adress].size >= size)
+            break;
+        block_adress = descriptor_array[block_adress].right_neighbor_id;
+    }
+    //nao há bloco desalocado ou com espaço
+    if(block_adress == -1) return NULL;
+
+    //fatia bloco em 2 se size for menor
+    if(descriptor_array[block_adress].size > size) {
+        int new_empty_block = 0;
+
+        while(new_empty_block < MAX_BLOCKS) {
+            //procura descritor ativo pro proximo bloco vazio
+            if(!descriptor_array[new_empty_block].active)
+                break;
+            new_empty_block++;
+        }
+        //cria bloco novo
+        if(new_empty_block != MAX_BLOCKS) {
+            descriptor_array[new_empty_block].size = descriptor_array[block_adress].size - size;
+
+            descriptor_array[new_empty_block].active = 1;
+            descriptor_array[new_empty_block].alocated = 0;
+
+            descriptor_array[new_empty_block].left_neighbor_id = block_adress;
+            descriptor_array[new_empty_block].right_neighbor_id = descriptor_array[block_adress].right_neighbor_id;
+
+            if(descriptor_array[block_adress].right_neighbor_id != -1)
+                descriptor_array[descriptor_array[block_adress].right_neighbor_id].left_neighbor_id = new_empty_block;
+
+            descriptor_array[new_empty_block].initial_address = descriptor_array[block_adress].initial_address + size;
+            descriptor_array[block_adress].size = size;
+            descriptor_array[block_adress].right_neighbor_id = new_empty_block;
+        }
+    }
+
+    descriptor_array[block_adress].alocated = 1;
+
+    bytes_allocated += size;
+    blocks_allocated++;
+    return descriptor_array[block_adress].initial_address;
 }
 
-// implementação trivial, a ser substituída
 int mem_free(void *addr)
 {
     free(addr);
     return (NOERROR);
 }
 
+void print_block(int block_id) {
+    void* block_end = descriptor_array[block_id].initial_address + descriptor_array[block_id].size - 1;
+
+    printk("heap: block %5d: 0x%p - 0x%p", block_id, descriptor_array[block_id].initial_address, block_end);
+
+    if(descriptor_array[block_id].alocated)
+        printk(" aloc ");
+    else
+        printk(" FREE ");
+    
+    printk("prev %5d next %5d size %d\n", descriptor_array[block_id].left_neighbor_id, 
+        descriptor_array[block_id].right_neighbor_id, descriptor_array[block_id].size);
+}
+
+void mem_report() {
+    printk("heap: %d KB allocated (%d blocks), %d KB free (%d blocks)\n",
+        bytes_allocated, blocks_allocated, HEAP_SIZE - bytes_allocated, MAX_BLOCKS - blocks_allocated);
+    for(int i = 0; i < MAX_BLOCKS; i++) 
+        if(descriptor_array[i].active)
+            print_block(i);
+}
+
+int mem_avail() {
+    return HEAP_SIZE - bytes_allocated;
+}
+
+int mem_size() {
+    return HEAP_SIZE;
+}
+
 void mem_init()
 {
+    for(int i = 0; i < MAX_BLOCKS; i++) {
+        descriptor_array[i].alocated = 0;
+        descriptor_array[i].active = 0;
+    }
+
+    descriptor_array[0].initial_address = heap;
+    descriptor_array[0].size = HEAP_SIZE;
+    descriptor_array[0].active = 1;
+    descriptor_array[0].left_neighbor_id = -1;
+    descriptor_array[0].right_neighbor_id = -1;
 }
 
 void mem_term()
 {
 }
-
