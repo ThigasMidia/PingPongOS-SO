@@ -14,7 +14,7 @@
 #include "lib/pplibc.h"
 #include "lib/map.h"
 #include "lib/queue.h"
-
+#include "memory.h"
 
 typedef struct mqueue_t {
 	int max_msgs;		// Máximo de mensagens permitidas no buffer 
@@ -49,7 +49,7 @@ int mqueue_create(int max_msgs, int msg_size){
 	if (!queue_map) return ERROR;
 
 	// Inicializa estrutura de dados
-	struct mqueue_t* mqueue = (struct mqueue_t*) malloc(sizeof(mqueue_t));
+	struct mqueue_t* mqueue = (struct mqueue_t*) mem_alloc(sizeof(mqueue_t));
 	if (!mqueue) return ERROR;
 
 	// Inicializa buffer interno
@@ -92,7 +92,7 @@ int mqueue_destroy(int mqueue_id){
 		void *msg = queue_head(mqueue->buffer);
 
 		queue_del(mqueue->buffer, msg);
-		free(msg);
+		mem_free(msg);
 	}
 	int res_q = queue_destroy(mqueue->buffer);
 
@@ -101,7 +101,7 @@ int mqueue_destroy(int mqueue_id){
 	// Retira estrutura do mapa
 	if (!map_del(queue_map, mqueue_id)) return ERROR;
 
-	free(mqueue);
+	mem_free(mqueue);
 	mqueue = NULL;
 	return NOERROR;
 }
@@ -128,7 +128,7 @@ int mqueue_send(int mqueue_id, void *msg){
 
 	// Adiciona item ao buffer
 
-    void *cp_msg = malloc(mqueue->msg_size);
+    void *cp_msg = mem_alloc(mqueue->msg_size);
     if (!cp_msg) {
         sem_up(mqueue->sem_buffer);
         sem_up(mqueue->sem_vaga);
@@ -137,7 +137,7 @@ int mqueue_send(int mqueue_id, void *msg){
     memcpy(cp_msg, msg, mqueue->msg_size);
 
     if (queue_add(mqueue->buffer, cp_msg) < 0) {
-        free(cp_msg);
+        mem_free(cp_msg);
         sem_up(mqueue->sem_buffer);
         sem_up(mqueue->sem_vaga);
         return ERROR;
@@ -189,7 +189,7 @@ int mqueue_recv(int mqueue_id, void *msg){
         sem_up(mqueue->sem_item);
         return ERROR;
     }
-    free(cp_msg);
+    mem_free(cp_msg);
 
     mqueue->msg_count--;
 

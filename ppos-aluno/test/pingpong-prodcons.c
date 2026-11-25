@@ -25,16 +25,16 @@ void body_producer(void *arg)
         task_sleep(1000);
 
         // Cria o item
-        int *item = malloc(sizeof(int));
+        int *item = mem_alloc(sizeof(int));
         *item = rand() % 100;
 
         // Pede acesso ao semaforo, juntamente de check se semaforo foi destruido
         if(sem_down(sem_vaga) < 0) {
-            free(item);
+            mem_free(item);
             task_exit(ERROR);
         }
         if(sem_down(sem_buffer) < 0) {
-            free(item);
+            mem_free(item);
             sem_up(sem_item);
             task_exit(ERROR);
         }
@@ -69,7 +69,7 @@ void body_consumer(void *arg)
         int *item = queue_head(buffer);
         printk("%s consumiu %d\n", (char *)arg, *item);
         queue_del(buffer, item);
-        free(item);
+        mem_free(item);
 
         // Libera semaforos
         sem_up(sem_buffer);
@@ -147,7 +147,7 @@ void user_main(void *arg)
     while(queue_size(buffer)) {
         int *item = queue_head(buffer);
         queue_del(buffer, item);
-        free(item);
+        mem_free(item);
     }
     queue_destroy(buffer);
 

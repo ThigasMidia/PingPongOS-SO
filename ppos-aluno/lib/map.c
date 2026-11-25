@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "map.h"
+#include "kernel/memory.h"
 
 typedef struct map_t {
 	void** items;			// itens
@@ -25,12 +26,12 @@ struct map_t *map_create(int size){
 		return NULL;
 	}
 	
-	map_t* map = (map_t*) malloc(sizeof(map_t));
+	map_t* map = (map_t*) mem_alloc(sizeof(map_t));
 	if (!map) return NULL;
 
 	map->items = (void**) calloc(size, sizeof(void*));
 	if (!map->items){
-		free(map);
+		mem_free(map);
 		return NULL;
 	}
 
@@ -53,7 +54,7 @@ int map_destroy(struct map_t *map){
 		free(map->items);
 		map->items = NULL;
 	}
-	free(map);
+	mem_free(map);
 	map = NULL;
 
 	return NOERROR;

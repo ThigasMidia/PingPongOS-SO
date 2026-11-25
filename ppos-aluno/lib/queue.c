@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "queue.h"
+#include "kernel/memory.h"
 
 struct queue_t {
     struct queue_t_node *head;
@@ -24,7 +25,7 @@ struct queue_t_node {
 };
 
 struct queue_t *queue_create() {
-    struct queue_t *new_queue = malloc(sizeof(struct queue_t));
+    struct queue_t *new_queue = mem_alloc(sizeof(struct queue_t));
     if(!new_queue)
         return NULL;
 
@@ -39,7 +40,7 @@ int queue_destroy(struct queue_t *queue) {
     if(!queue)
         return ERROR;
 
-    free(queue);
+    mem_free(queue);
     return NOERROR;
 }
 
@@ -48,13 +49,13 @@ int queue_add(struct queue_t *queue, void *item) {
         return ERROR;
     
     if(!queue_size(queue)) {
-        queue->head = malloc(sizeof(struct queue_t_node));
+        queue->head = mem_alloc(sizeof(struct queue_t_node));
         queue->tail = queue->head;
         queue->iterator = queue->head;
     }
 
     else {
-        queue->tail->next = malloc(sizeof(struct queue_t_node));
+        queue->tail->next = mem_alloc(sizeof(struct queue_t_node));
         queue->tail = queue->tail->next;
     }
 
@@ -91,7 +92,7 @@ int queue_del(struct queue_t *queue, void *item) {
             else
                 queue_next(queue);
         }
-        free(finder_iterator);
+        mem_free(finder_iterator);
         finder_iterator = NULL;
     }
 
@@ -117,7 +118,7 @@ int queue_del(struct queue_t *queue, void *item) {
         else
             finder_iterator->next = remove_iterator->next;
 
-        free(remove_iterator);
+        mem_free(remove_iterator);
         remove_iterator = NULL;
     }
     queue->queue_size--;
