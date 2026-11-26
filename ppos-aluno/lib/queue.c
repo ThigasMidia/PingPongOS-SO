@@ -50,12 +50,16 @@ int queue_add(struct queue_t *queue, void *item) {
     
     if(!queue_size(queue)) {
         queue->head = mem_alloc(sizeof(struct queue_t_node));
+        if(!queue->head)
+            return ERROR;
         queue->tail = queue->head;
         queue->iterator = queue->head;
     }
 
     else {
         queue->tail->next = mem_alloc(sizeof(struct queue_t_node));
+        if(!queue->tail->next)
+            return ERROR;
         queue->tail = queue->tail->next;
     }
 

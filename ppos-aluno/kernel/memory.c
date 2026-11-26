@@ -33,7 +33,7 @@ int first_block;
 
 void *mem_alloc(int size)
 {
-    if(size <= 0) return NULL;
+    if(size <= 0 || size > HEAP_SIZE) return NULL;
     size = ((size - 1) | 0x00000F) + 1;
 
     int block_adress = first_block;
@@ -61,24 +61,24 @@ void *mem_alloc(int size)
             new_empty_block++;
         }
         //cria bloco novo
-        if(new_empty_block != MAX_BLOCKS) {
-            descriptor_array[new_empty_block].size = descriptor_array[block_adress].size - size;
+        if(new_empty_block == MAX_BLOCKS) return NULL;
 
-            descriptor_array[new_empty_block].active = 1;
-            descriptor_array[new_empty_block].alocated = 0;
+        descriptor_array[new_empty_block].size = descriptor_array[block_adress].size - size;
 
-            //redireciona vizinhos do novo bloco
-            descriptor_array[new_empty_block].left_neighbor_id = block_adress;
-            descriptor_array[new_empty_block].right_neighbor_id = descriptor_array[block_adress].right_neighbor_id;
+        descriptor_array[new_empty_block].active = 1;
+        descriptor_array[new_empty_block].alocated = 0;
 
-            //redireciona vizinho do proximo bloco
-            descriptor_array[descriptor_array[block_adress].right_neighbor_id].left_neighbor_id = new_empty_block;
+        //redireciona vizinhos do novo bloco
+        descriptor_array[new_empty_block].left_neighbor_id = block_adress;
+        descriptor_array[new_empty_block].right_neighbor_id = descriptor_array[block_adress].right_neighbor_id;
 
-            //atualiza tamanho e vizinhos do atual e do novo
-            descriptor_array[new_empty_block].initial_address = descriptor_array[block_adress].initial_address + size;
-            descriptor_array[block_adress].size = size;
-            descriptor_array[block_adress].right_neighbor_id = new_empty_block;
-        }
+        //redireciona vizinho do proximo bloco
+        descriptor_array[descriptor_array[block_adress].right_neighbor_id].left_neighbor_id = new_empty_block;
+
+        //atualiza tamanho e vizinhos do atual e do novo
+        descriptor_array[new_empty_block].initial_address = (char *)descriptor_array[block_adress].initial_address + size;
+        descriptor_array[block_adress].size = size;
+        descriptor_array[block_adress].right_neighbor_id = new_empty_block;
     }
 
     if(descriptor_array[descriptor_array[block_adress].left_neighbor_id].left_neighbor_id == -1)
@@ -113,23 +113,25 @@ int mem_free(void *addr)
     //marca como livre
     descriptor_array[block_id].alocated = 0;
     bytes_allocated -= descriptor_array[block_id].size;
-    if(!descriptor_array[id_esquerdo].alocated) {
+    if(id_esquerdo != block_id && !descriptor_array[id_esquerdo].alocated) {
         if(first_block == block_id) first_block = id_esquerdo;
         //desativa, atualiza vizinhos, aumenta tamanho do vizinho esquerdo
         descriptor_array[block_id].active = 0;
         descriptor_array[id_esquerdo].size += descriptor_array[block_id].size;
         descriptor_array[id_esquerdo].right_neighbor_id = id_direito;
+        descriptor_array[id_direito].left_neighbor_id = id_esquerdo;
 
         //aterra o tamanho e troca block_id pelo id do vizinho esquerdo caso precise se fundir com o direito
         descriptor_array[block_id].size = 0;
         block_id = id_esquerdo;
     }
 
-    if(!descriptor_array[id_direito].alocated) {
+    if(id_direito != block_id && !descriptor_array[id_direito].alocated) {
         if(first_block == id_direito) first_block = block_id;
         descriptor_array[id_direito].active = 0;
         descriptor_array[block_id].size += descriptor_array[id_direito].size;
         descriptor_array[block_id].right_neighbor_id = descriptor_array[id_direito].right_neighbor_id;
+        descriptor_array[descriptor_array[id_direito].right_neighbor_id].left_neighbor_id = block_id;
 
         descriptor_array[id_direito].size = 0;
     }
@@ -139,7 +141,7 @@ int mem_free(void *addr)
 }
 
 void print_block(int block_id) {
-    void* block_end = descriptor_array[block_id].initial_address + descriptor_array[block_id].size - 1;
+    void* block_end = (char *)descriptor_array[block_id].initial_address + descriptor_array[block_id].size - 1;
 
     printk("heap: block %5d: 0x%p - 0x%p", block_id, descriptor_array[block_id].initial_address, block_end);
 
@@ -184,6 +186,8 @@ void mem_init()
     descriptor_array[0].active = 1;
     descriptor_array[0].left_neighbor_id = 0;
     descriptor_array[0].right_neighbor_id = 0;
+    bytes_allocated = 0;
+    blocks_allocated = 0;
     first_block = 0;
 }
 

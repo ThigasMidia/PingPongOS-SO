@@ -91,6 +91,8 @@ int task_switch(struct task_t *task) {
 	if (!task) next_task = curr_task->parent;	
 
 	if (!next_task) return ERROR;
+	if (task && queue_has(queue_ready, next_task))
+		queue_del(queue_ready, next_task);
 
 	curr_task = next_task;
 	unsigned int curr_time = time();
